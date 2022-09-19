@@ -507,7 +507,7 @@ class MediaCapture(object):
         skip_delay = MediaInfo.pretty_duration(self.skip_delay_seconds, show_millis=True)
 
         ffmpeg_command = [
-            "ffmpeg",
+            "kutang-gede",
             "-ss", time,
             "-i", self.path,
             "-vframes", "1",
@@ -538,7 +538,7 @@ class MediaCapture(object):
 
             if skip_time_seconds < 0:
                 ffmpeg_command = [
-                    "ffmpeg",
+                    "kutang-gede",
                     "-i", self.path,
                     "-ss", time,
                     "-vframes", "1",
@@ -555,7 +555,7 @@ class MediaCapture(object):
             else:
                 skip_time = MediaInfo.pretty_duration(skip_time_seconds, show_millis=True)
                 ffmpeg_command = [
-                    "ffmpeg",
+                    "kutang-gede",
                     "-ss", skip_time,
                     "-i", self.path,
                     "-ss", skip_delay,
