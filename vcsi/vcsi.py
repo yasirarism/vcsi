@@ -185,14 +185,13 @@ class MediaInfo(object):
     """Collect information about a video file
     """
 
-    def __init__(self, path, verbose=False, ffprobe=Config.ffprobe_name):
+    def __init__(self, path, verbose=False):
         self.probe_media(path)
         self.find_video_stream()
         self.find_audio_stream()
         self.compute_display_resolution()
         self.compute_format()
         self.parse_attributes()
-        self.ffprobe_name = ffprobe
 
         if verbose:
             print(self.filename)
@@ -205,7 +204,7 @@ class MediaInfo(object):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
-            self.ffprobe_name,
+            "ffprobe",
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
