@@ -192,7 +192,6 @@ class MediaInfo(object):
         self.compute_display_resolution()
         self.compute_format()
         self.parse_attributes()
-        self.ffprobe_name = ffprobe
 
         if verbose:
             print(self.filename)
@@ -205,7 +204,7 @@ class MediaInfo(object):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
-            self.ffprobe_name,
+            "ffprobe",
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
