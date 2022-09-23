@@ -185,13 +185,14 @@ class MediaInfo(object):
     """Collect information about a video file
     """
 
-    def __init__(self, path, verbose=False):
+    def __init__(self, path, verbose=False, ffprobe_name=Config.ffprobe_name):
         self.probe_media(path)
         self.find_video_stream()
         self.find_audio_stream()
         self.compute_display_resolution()
         self.compute_format()
         self.parse_attributes()
+        self.ffprobe_name = ffprobe_name
 
         if verbose:
             print(self.filename)
@@ -204,7 +205,7 @@ class MediaInfo(object):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
-            args.ffprobe_name,
+            self.ffprobe_name,
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
@@ -501,19 +502,20 @@ class MediaCapture(object):
     """
 
     def __init__(self, path, accurate=False, skip_delay_seconds=Config.accurate_delay_seconds,
-                 frame_type=Config.frame_type):
+                 frame_type=Config.frame_type, ffmpeg_name=Config.ffmpeg_name):
         self.path = path
         self.accurate = accurate
         self.skip_delay_seconds = skip_delay_seconds
         self.frame_type = frame_type
+        self.ffmpeg_name = ffmpeg_name
 
-    def make_capture(self, time, width, height, out_path="out.png", args):
+    def make_capture(self, time, width, height, out_path="out.png"):
         """Capture a frame at given time with given width and height using ffmpeg
         """
         skip_delay = MediaInfo.pretty_duration(self.skip_delay_seconds, show_millis=True)
 
         ffmpeg_command = [
-            args.ffmpeg_name,
+            self.ffmpeg_name,
             "-ss", time,
             "-i", self.path,
             "-vframes", "1",
@@ -544,7 +546,7 @@ class MediaCapture(object):
 
             if skip_time_seconds < 0:
                 ffmpeg_command = [
-                    args.ffmpeg_name,
+                    self.ffmpeg_name,
                     "-i", self.path,
                     "-ss", time,
                     "-vframes", "1",
@@ -561,7 +563,7 @@ class MediaCapture(object):
             else:
                 skip_time = MediaInfo.pretty_duration(skip_time_seconds, show_millis=True)
                 ffmpeg_command = [
-                    args.ffmpeg_name,
+                    self.ffmpeg_name,
                     "-ss", skip_time,
                     "-i", self.path,
                     "-ss", skip_delay,
@@ -1619,7 +1621,7 @@ def main():
         "--ffprobe-name",
         help="Use this if you have change ffprobe name. Default to ffprobe, example: --ffprobe-name myffprobe",
         default=Config.ffprobe_name,
-        dest="ffmpeg_name"
+        dest="ffprobe_name"
     )
 
     args = parser.parse_args()
@@ -1707,12 +1709,15 @@ def process_file(path, args):
 
     media_info = MediaInfo(
         path,
-        verbose=args.is_verbose)
+        verbose=args.is_verbose,
+        ffprobe_name=args.ffprobe_name
+    )
     media_capture = MediaCapture(
         path,
         accurate=args.is_accurate,
         skip_delay_seconds=args.accurate_delay_seconds,
-        frame_type=args.frame_type
+        frame_type=args.frame_type,
+        ffmpeg_name=args.ffmpeg_name
     )
 
     # metadata margins
