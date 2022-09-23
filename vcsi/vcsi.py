@@ -86,6 +86,10 @@ if os.name == 'nt':
         "C:/Windows/Fonts/calibri.ttf",
         "C:/Windows/Fonts/arial.ttf"
     ]
+    
+# ffmpeg & ffprobe Path
+DEFAULT_FFMPEG = "ffmpeg"
+DEFAULT_FFPROBE = "ffprobe"
 
 DEFAULT_CONTACT_SHEET_WIDTH = 1500
 DEFAULT_DELAY_PERCENT = None
@@ -119,6 +123,8 @@ DEFAULT_INTERVAL = None
 
 
 class Config:
+    ffmpeg_name = DEFAULT_FFMPEG
+    ffprobe_name = DEFAULT_FFPROBE
     metadata_font_size = DEFAULT_METADATA_FONT_SIZE
     metadata_font = DEFAULT_METADATA_FONT
     timestamp_font_size = DEFAULT_TIMESTAMP_FONT_SIZE
@@ -194,11 +200,11 @@ class MediaInfo(object):
             print(self.duration)
             print(self.size)
 
-    def probe_media(self, path):
+    def probe_media(self, path, args):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
-            "ffprobe",
+            args.ffprobe_name,
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
@@ -501,13 +507,13 @@ class MediaCapture(object):
         self.skip_delay_seconds = skip_delay_seconds
         self.frame_type = frame_type
 
-    def make_capture(self, time, width, height, out_path="out.png"):
+    def make_capture(self, time, width, height, out_path="out.png", args):
         """Capture a frame at given time with given width and height using ffmpeg
         """
         skip_delay = MediaInfo.pretty_duration(self.skip_delay_seconds, show_millis=True)
 
         ffmpeg_command = [
-            "kutang-gede",
+            args.ffmpeg_name,
             "-ss", time,
             "-i", self.path,
             "-vframes", "1",
@@ -538,7 +544,7 @@ class MediaCapture(object):
 
             if skip_time_seconds < 0:
                 ffmpeg_command = [
-                    "kutang-gede",
+                    args.ffmpeg_name,
                     "-i", self.path,
                     "-ss", time,
                     "-vframes", "1",
@@ -555,7 +561,7 @@ class MediaCapture(object):
             else:
                 skip_time = MediaInfo.pretty_duration(skip_time_seconds, show_millis=True)
                 ffmpeg_command = [
-                    "kutang-gede",
+                    args.ffmpeg_name,
                     "-ss", skip_time,
                     "-i", self.path,
                     "-ss", skip_delay,
@@ -1602,6 +1608,18 @@ def main():
         help="Use specified timestamp format. Replaced values include: {TIME}, {DURATION}, {THUMBNAIL_NUMBER}, {H} (hours), {M} (minutes), {S} (seconds), {c} (centiseconds), {m} (milliseconds), {dH}, {dM}, {dS}, {dc} and {dm} (same as previous values but for the total duration). Example format: '{TIME} / {DURATION}'. Another example: '{THUMBNAIL_NUMBER}'. Yet another example: '{H}:{M}:{S}.{m} / {dH}:{dM}:{dS}.{dm}'.",
         default="{TIME}",
         dest="timestamp_format"
+    )
+    parser.add_argument(
+        "--ffmpeg-name",
+        help="Use this if you have change ffmpeg name. Default to ffmpeg, example: --ffmpeg-name myffmpeg",
+        default=Config.ffmpeg_name,
+        dest="ffmpeg_name"
+    )
+    parser.add_argument(
+        "--ffprobe-name",
+        help="Use this if you have change ffprobe name. Default to ffprobe, example: --ffprobe-name myffprobe",
+        default=Config.ffprobe_name,
+        dest="ffmpeg_name"
     )
 
     args = parser.parse_args()
