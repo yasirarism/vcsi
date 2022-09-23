@@ -201,7 +201,7 @@ class MediaInfo(object):
             print(self.duration)
             print(self.size)
 
-    def probe_media(self, path, args):
+    def probe_media(self, path):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
