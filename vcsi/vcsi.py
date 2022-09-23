@@ -501,12 +501,12 @@ class MediaCapture(object):
     """
 
     def __init__(self, path, accurate=False, skip_delay_seconds=Config.accurate_delay_seconds,
-                 frame_type=Config.frame_type, ffmpeg_name=Config.ffmpeg_name):
+                 frame_type=Config.frame_type, ffmpeg=Config.ffmpeg_name):
         self.path = path
         self.accurate = accurate
         self.skip_delay_seconds = skip_delay_seconds
         self.frame_type = frame_type
-        self.ffmpeg_name = ffmpeg_name
+        self.ffmpeg_name = ffmpeg
 
     def make_capture(self, time, width, height, out_path="out.png"):
         """Capture a frame at given time with given width and height using ffmpeg
