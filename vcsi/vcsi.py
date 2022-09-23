@@ -185,14 +185,14 @@ class MediaInfo(object):
     """Collect information about a video file
     """
 
-    def __init__(self, path, verbose=False, ffprobe_name=Config.ffprobe_name):
+    def __init__(self, path, verbose=False, ffprobe=Config.ffprobe_name):
         self.probe_media(path)
         self.find_video_stream()
         self.find_audio_stream()
         self.compute_display_resolution()
         self.compute_format()
         self.parse_attributes()
-        self.ffprobe_name = ffprobe_name
+        self.ffprobe_name = ffprobe
 
         if verbose:
             print(self.filename)
@@ -1705,19 +1705,22 @@ def process_file(path, args):
         args.start_delay_percent = args.delay_percent
         args.end_delay_percent = args.delay_percent
 
+    if args.ffprobe_name is not None:
+        args
+        
     args.num_groups = 5
 
     media_info = MediaInfo(
         path,
         verbose=args.is_verbose,
-        ffprobe_name=args.ffprobe_name
+        ffprobe=args.ffprobe_name
     )
     media_capture = MediaCapture(
         path,
         accurate=args.is_accurate,
         skip_delay_seconds=args.accurate_delay_seconds,
         frame_type=args.frame_type,
-        ffmpeg_name=args.ffmpeg_name
+        ffmpeg=args.ffmpeg_name
     )
 
     # metadata margins
