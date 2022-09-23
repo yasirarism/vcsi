@@ -1711,8 +1711,7 @@ def process_file(path, args):
 
     media_info = MediaInfo(
         path,
-        verbose=args.is_verbose,
-        ffprobe=args.ffprobe_name
+        verbose=args.is_verbose
     )
     media_capture = MediaCapture(
         path,
