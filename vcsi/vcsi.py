@@ -86,10 +86,6 @@ if os.name == 'nt':
         "C:/Windows/Fonts/calibri.ttf",
         "C:/Windows/Fonts/arial.ttf"
     ]
-    
-# ffmpeg & ffprobe Path
-DEFAULT_FFMPEG = "ffmpeg"
-DEFAULT_FFPROBE = "ffprobe"
 
 DEFAULT_CONTACT_SHEET_WIDTH = 1500
 DEFAULT_DELAY_PERCENT = None
@@ -123,8 +119,6 @@ DEFAULT_INTERVAL = None
 
 
 class Config:
-    ffmpeg_name = DEFAULT_FFMPEG
-    ffprobe_name = DEFAULT_FFPROBE
     metadata_font_size = DEFAULT_METADATA_FONT_SIZE
     metadata_font = DEFAULT_METADATA_FONT
     timestamp_font_size = DEFAULT_TIMESTAMP_FONT_SIZE
@@ -185,7 +179,8 @@ class MediaInfo(object):
     """Collect information about a video file
     """
 
-    def __init__(self, path, verbose=False):
+    def __init__(self, path, verbose: bool = False, ffprobe: str = "ffprobe"):
+        self.ffprobe = ffprobe
         self.probe_media(path)
         self.find_video_stream()
         self.find_audio_stream()
@@ -204,7 +199,7 @@ class MediaInfo(object):
         """Probe video file using ffprobe
         """
         ffprobe_command = [
-            "ffprobe",
+            self.ffprobe,
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
@@ -501,12 +496,12 @@ class MediaCapture(object):
     """
 
     def __init__(self, path, accurate=False, skip_delay_seconds=Config.accurate_delay_seconds,
-                 frame_type=Config.frame_type, ffmpeg=Config.ffmpeg_name):
+                 frame_type=Config.frame_type, ffmpeg="ffmpeg"):
         self.path = path
         self.accurate = accurate
         self.skip_delay_seconds = skip_delay_seconds
         self.frame_type = frame_type
-        self.ffmpeg_name = ffmpeg
+        self.ffmpeg = ffmpeg
 
     def make_capture(self, time, width, height, out_path="out.png"):
         """Capture a frame at given time with given width and height using ffmpeg
@@ -514,7 +509,7 @@ class MediaCapture(object):
         skip_delay = MediaInfo.pretty_duration(self.skip_delay_seconds, show_millis=True)
 
         ffmpeg_command = [
-            self.ffmpeg_name,
+            self.ffmpeg,
             "-ss", time,
             "-i", self.path,
             "-vframes", "1",
@@ -545,7 +540,7 @@ class MediaCapture(object):
 
             if skip_time_seconds < 0:
                 ffmpeg_command = [
-                    self.ffmpeg_name,
+                    self.ffmpeg,
                     "-i", self.path,
                     "-ss", time,
                     "-vframes", "1",
@@ -562,7 +557,7 @@ class MediaCapture(object):
             else:
                 skip_time = MediaInfo.pretty_duration(skip_time_seconds, show_millis=True)
                 ffmpeg_command = [
-                    self.ffmpeg_name,
+                    self.ffmpeg,
                     "-ss", skip_time,
                     "-i", self.path,
                     "-ss", skip_delay,
@@ -1612,14 +1607,14 @@ def main():
     )
     parser.add_argument(
         "--ffmpeg-name",
-        help="Use this if you have change ffmpeg name. Default to ffmpeg, example: --ffmpeg-name myffmpeg",
-        default=Config.ffmpeg_name,
+        help="Use to Custom FFMPEG Folder Path.",
+        default="ffmpeg",
         dest="ffmpeg_name"
     )
     parser.add_argument(
         "--ffprobe-name",
-        help="Use this if you have change ffprobe name. Default to ffprobe, example: --ffprobe-name myffprobe",
-        default=Config.ffprobe_name,
+        help="Use to Custom FFPROBE Folder Path.",
+        default="ffprobe",
         dest="ffprobe_name"
     )
 
@@ -1704,14 +1699,12 @@ def process_file(path, args):
         args.start_delay_percent = args.delay_percent
         args.end_delay_percent = args.delay_percent
 
-    if args.ffprobe_name is not None:
-        args
-        
     args.num_groups = 5
 
     media_info = MediaInfo(
         path,
-        verbose=args.is_verbose
+        verbose=args.is_verbose,
+        ffprobe=args.ffprobe_name
     )
     media_capture = MediaCapture(
         path,
