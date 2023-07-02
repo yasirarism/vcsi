@@ -1052,7 +1052,10 @@ def compose_contact_sheet(
                 "dm": str(parsed_duration["millis"]).zfill(3)
             }
             timestamp_text = args.timestamp_format.format(**timestamp_args)
-            text_size = timestamp_font.getsize(timestamp_text)
+            try:
+                text_size = timestamp_font.getsize(timestamp_text)
+            except AttributeError: # For Pillow 10.0
+                text_size = timestamp_font.getbbox(timestamp_text)
 
             # draw rectangle
             rectangle_hpadding = args.timestamp_horizontal_padding
