@@ -1,7 +1,6 @@
 # vcsi
 
-[![Build Status](https://travis-ci.org/amietn/vcsi.svg?branch=master)](https://travis-ci.org/amietn/vcsi)
-[![Coverage Status](https://coveralls.io/repos/github/amietn/vcsi/badge.svg?branch=master)](https://coveralls.io/github/amietn/vcsi?branch=master)
+![Build Status](https://github.com/amietn/vcsi/actions/workflows/testing.yml/badge.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
 [![PyPI version](https://badge.fury.io/py/vcsi.svg)](https://badge.fury.io/py/vcsi)
 
@@ -39,8 +38,19 @@ The above contact sheets were generated from a movie called "Big Buck Bunny".
 
 ### PyPi
 
+`vcsi` can be installed from PyPi:
+
 ```
 $ pip install vcsi
+```
+
+### Poetry
+
+First install [Poetry](https://python-poetry.org/docs/#installation), then run:
+
+```
+$ poetry build
+$ pip install dist/*.whl
 ```
 
 ### Distribution packages
@@ -57,8 +67,9 @@ Your system is not listed?
 
 ```
 $ apt-get install ffmpeg
-$ python setup.py install
 ```
+
+Then use the Poetry installation method above.
 
 Running Windows? See the note below.
 
@@ -346,3 +357,18 @@ Resolution: {{sample_width}}x{{sample_height}}
 | audio_sample_rate | Audio sample rate (Hz) | 44100 |
 | audio_bit_rate | Audio bit rate | 192000 |
 | frame_rate | Frame rate (fps) | 23.974 |
+
+
+## Testing
+
+To run the test suite, run:
+
+```
+poetry run pytest
+```
+
+To measure code coverage:
+
+```
+poetry run pytest --cov=vcsi.vcsi
+```
