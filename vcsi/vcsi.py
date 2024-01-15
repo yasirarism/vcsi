@@ -46,7 +46,7 @@ __author__ = "Nils Amiet"
 
 class Grid(namedtuple('Grid', ['x', 'y'])):
     def __str__(self):
-        return "%sx%s" % (self.x, self.y)
+        return f"{self.x}x{self.y}"
 
 
 class Frame(namedtuple('Frame', ['filename', 'blurriness', 'timestamp', 'avg_color'])):
@@ -56,7 +56,7 @@ class Frame(namedtuple('Frame', ['filename', 'blurriness', 'timestamp', 'avg_col
 class Color(namedtuple('Color', ['r', 'g', 'b', 'a'])):
     def to_hex(self, component):
         h = hex(component).replace("0x", "").upper()
-        return h if len(h) == 2 else "0" + h
+        return h if len(h) == 2 else f"0{h}"
 
     def __str__(self):
         return "".join([self.to_hex(x) for x in [self.r, self.g, self.b, self.a]])
@@ -168,10 +168,9 @@ class Config:
                 config_entry,
                 fallback=getattr(cls, config_entry)
             ))
-        # special cases
-        # fallback_fonts is an array, it's reflected as comma separated list in config file
-        fallback_fonts = config.get(DEFAULT_CONFIG_SECTION, 'fallback_fonts', fallback=None)
-        if fallback_fonts:
+        if fallback_fonts := config.get(
+            DEFAULT_CONFIG_SECTION, 'fallback_fonts', fallback=None
+        ):
             cls.fallback_fonts = comma_separated_string_type(fallback_fonts)
 
 
@@ -190,8 +189,8 @@ class MediaInfo(object):
 
         if verbose:
             print(self.filename)
-            print("%sx%s" % (self.sample_width, self.sample_height))
-            print("%sx%s" % (self.display_width, self.display_height))
+            print(f"{self.sample_width}x{self.sample_height}")
+            print(f"{self.display_width}x{self.display_height}")
             print(self.duration)
             print(self.size)
 
@@ -272,15 +271,13 @@ class MediaInfo(object):
 
         if sample_aspect_ratio == "1:1":
             self.display_width = self.sample_width
-            self.display_height = self.sample_height
         else:
             sample_split = sample_aspect_ratio.split(":")
             sw = int(sample_split[0])
             sh = int(sample_split[1])
 
             self.display_width = int(self.sample_width * sw / sh)
-            self.display_height = int(self.sample_height)
-
+        self.display_height = self.sample_height
         if self.display_width == 0:
             self.display_width = self.sample_width
 
@@ -334,8 +331,7 @@ class MediaInfo(object):
             minutes = int(left_split[1])
             seconds = int(left_split[2])
 
-        result = (millis / 1000.0) + seconds + minutes * 60 + hours * 3600
-        return result
+        return (millis / 1000.0) + seconds + minutes * 60 + hours * 3600
 
     @staticmethod
     def pretty_duration(
@@ -353,15 +349,15 @@ class MediaInfo(object):
         duration = ""
 
         if hours > 0:
-            duration += "%s:" % (int(hours),)
+            duration += f"{hours}:"
 
-        duration += "%s:%s" % (str(int(minutes)).zfill(2), str(int(math.floor(remaining_seconds))).zfill(2))
+        duration += f"{str(int(minutes)).zfill(2)}:{str(int(math.floor(remaining_seconds))).zfill(2)}"
 
         if show_centis or show_millis:
             coeff = 1000 if show_millis else 100
             digits = 3 if show_millis else 2
             centis = math.floor((remaining_seconds - math.floor(remaining_seconds)) * coeff)
-            duration += ".%s" % (str(int(centis)).zfill(digits))
+            duration += f".{str(int(centis)).zfill(digits)}"
 
         return duration
 
@@ -432,11 +428,8 @@ class MediaInfo(object):
                 self.frame_rate = int(self.frame_rate)
 
             self.frame_rate = round(self.frame_rate, 3)
-        except KeyError:
+        except (KeyError, ZeroDivisionError):
             self.frame_rate = None
-        except ZeroDivisionError:
-            self.frame_rate = None
-
         # audio
         try:
             self.audio_codec = self.audio_stream["codec_name"]
@@ -461,34 +454,107 @@ class MediaInfo(object):
     def template_attributes(self):
         """Returns the template attributes and values ready for use in the metadata header
         """
-        return dict((x["name"], getattr(self, x["name"])) for x in MediaInfo.list_template_attributes())
+        return {
+            x["name"]: getattr(self, x["name"])
+            for x in MediaInfo.list_template_attributes()
+        }
 
     @staticmethod
     def list_template_attributes():
         """Returns a list a of all supported template attributes with their description and example
         """
-        table = []
-        table.append({"name": "size", "description": "File size (pretty format)", "example": "128.3 MiB"})
-        table.append({"name": "size_bytes", "description": "File size (bytes)", "example": "4662788373"})
-        table.append({"name": "filename", "description": "File name", "example": "video.mkv"})
-        table.append({"name": "duration", "description": "Duration (pretty format)", "example": "03:07"})
-        table.append({"name": "sample_width", "description": "Sample width (pixels)", "example": "1920"})
-        table.append({"name": "sample_height", "description": "Sample height (pixels)", "example": "1080"})
-        table.append({"name": "display_width", "description": "Display width (pixels)", "example": "1920"})
-        table.append({"name": "display_height", "description": "Display height (pixels)", "example": "1080"})
-        table.append({"name": "video_codec", "description": "Video codec", "example": "h264"})
-        table.append({"name": "video_codec_long", "description": "Video codec (long name)",
-                      "example": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"})
-        table.append({"name": "video_bit_rate", "description": "Video bitrate", "example": "4000"})
-        table.append({"name": "display_aspect_ratio", "description": "Display aspect ratio", "example": "16:9"})
-        table.append({"name": "sample_aspect_ratio", "description": "Sample aspect ratio", "example": "1:1"})
-        table.append({"name": "audio_codec", "description": "Audio codec", "example": "aac"})
-        table.append({"name": "audio_codec_long", "description": "Audio codec (long name)",
-                      "example": "AAC (Advanced Audio Coding)"})
-        table.append({"name": "audio_sample_rate", "description": "Audio sample rate (Hz)", "example": "44100"})
-        table.append({"name": "audio_bit_rate", "description": "Audio bit rate (bits/s)", "example": "192000"})
-        table.append({"name": "frame_rate", "description": "Frame rate (frames/s)", "example": "23.974"})
-        return table
+        return [
+            {
+                "name": "size",
+                "description": "File size (pretty format)",
+                "example": "128.3 MiB",
+            },
+            {
+                "name": "size_bytes",
+                "description": "File size (bytes)",
+                "example": "4662788373",
+            },
+            {
+                "name": "filename",
+                "description": "File name",
+                "example": "video.mkv",
+            },
+            {
+                "name": "duration",
+                "description": "Duration (pretty format)",
+                "example": "03:07",
+            },
+            {
+                "name": "sample_width",
+                "description": "Sample width (pixels)",
+                "example": "1920",
+            },
+            {
+                "name": "sample_height",
+                "description": "Sample height (pixels)",
+                "example": "1080",
+            },
+            {
+                "name": "display_width",
+                "description": "Display width (pixels)",
+                "example": "1920",
+            },
+            {
+                "name": "display_height",
+                "description": "Display height (pixels)",
+                "example": "1080",
+            },
+            {
+                "name": "video_codec",
+                "description": "Video codec",
+                "example": "h264",
+            },
+            {
+                "name": "video_codec_long",
+                "description": "Video codec (long name)",
+                "example": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            },
+            {
+                "name": "video_bit_rate",
+                "description": "Video bitrate",
+                "example": "4000",
+            },
+            {
+                "name": "display_aspect_ratio",
+                "description": "Display aspect ratio",
+                "example": "16:9",
+            },
+            {
+                "name": "sample_aspect_ratio",
+                "description": "Sample aspect ratio",
+                "example": "1:1",
+            },
+            {
+                "name": "audio_codec",
+                "description": "Audio codec",
+                "example": "aac",
+            },
+            {
+                "name": "audio_codec_long",
+                "description": "Audio codec (long name)",
+                "example": "AAC (Advanced Audio Coding)",
+            },
+            {
+                "name": "audio_sample_rate",
+                "description": "Audio sample rate (Hz)",
+                "example": "44100",
+            },
+            {
+                "name": "audio_bit_rate",
+                "description": "Audio bit rate (bits/s)",
+                "example": "192000",
+            },
+            {
+                "name": "frame_rate",
+                "description": "Frame rate (frames/s)",
+                "example": "23.974",
+            },
+        ]
 
 
 class MediaCapture(object):
@@ -510,10 +576,14 @@ class MediaCapture(object):
 
         ffmpeg_command = [
             self.ffmpeg,
-            "-ss", time,
-            "-i", self.path,
-            "-vframes", "1",
-            "-s", "%sx%s" % (width, height),
+            "-ss",
+            time,
+            "-i",
+            self.path,
+            "-vframes",
+            "1",
+            "-s",
+            f"{width}x{height}",
         ]
 
         if self.frame_type is not None:
@@ -541,38 +611,39 @@ class MediaCapture(object):
             if skip_time_seconds < 0:
                 ffmpeg_command = [
                     self.ffmpeg,
-                    "-i", self.path,
-                    "-ss", time,
-                    "-vframes", "1",
-                    "-s", "%sx%s" % (width, height),
+                    "-i",
+                    self.path,
+                    "-ss",
+                    time,
+                    "-vframes",
+                    "1",
+                    "-s",
+                    f"{width}x{height}",
                 ]
 
-                if self.frame_type is not None:
-                    ffmpeg_command += select_args
-
-                ffmpeg_command += [
-                    "-y",
-                    out_path
-                ]
             else:
                 skip_time = MediaInfo.pretty_duration(skip_time_seconds, show_millis=True)
                 ffmpeg_command = [
                     self.ffmpeg,
-                    "-ss", skip_time,
-                    "-i", self.path,
-                    "-ss", skip_delay,
-                    "-vframes", "1",
-                    "-s", "%sx%s" % (width, height),
+                    "-ss",
+                    skip_time,
+                    "-i",
+                    self.path,
+                    "-ss",
+                    skip_delay,
+                    "-vframes",
+                    "1",
+                    "-s",
+                    f"{width}x{height}",
                 ]
 
-                if self.frame_type is not None:
-                    ffmpeg_command += select_args
+            if self.frame_type is not None:
+                ffmpeg_command += select_args
 
-                ffmpeg_command += [
-                    "-y",
-                    out_path
-                ]
-
+            ffmpeg_command += [
+                "-y",
+                out_path
+            ]
         try:
             subprocess.call(ffmpeg_command, stdin=DEVNULL, stderr=DEVNULL, stdout=DEVNULL)
         except FileNotFoundError:
@@ -607,10 +678,7 @@ class MediaCapture(object):
         b = abs(numpy.fft.rfft2(a))
         max_freq = self.avg9x(b)
 
-        if max_freq != 0:
-            return 1 / max_freq
-        else:
-            return 1
+        return 1 / max_freq if max_freq != 0 else 1
 
     def avg9x(self, matrix, percentage=0.05):
         """Computes the median of the top n% highest values.
@@ -654,8 +722,7 @@ def total_delay_seconds(media_info, args):
     """
     start_delay_seconds = math.floor(media_info.duration_seconds * args.start_delay_percent / 100)
     end_delay_seconds = math.floor(media_info.duration_seconds * args.end_delay_percent / 100)
-    delay = start_delay_seconds + end_delay_seconds
-    return delay
+    return start_delay_seconds + end_delay_seconds
 
 
 def timestamp_generator(media_info, args):
@@ -671,7 +738,7 @@ def timestamp_generator(media_info, args):
     start_delay_seconds = math.floor(media_info.duration_seconds * args.start_delay_percent / 100)
     time = start_delay_seconds + capture_interval
 
-    for i in range(args.num_samples):
+    for _ in range(args.num_samples):
         yield (time, MediaInfo.pretty_duration(time, show_millis=True))
         time += capture_interval
 
@@ -787,7 +854,9 @@ def select_color_variety(frames: Iterable[Frame], num_selected):
         if not selected_items:
             selected_items += [frame]
         else:
-            color_distance = min([abs(frame.avg_color - x.avg_color) for x in selected_items])
+            color_distance = min(
+                abs(frame.avg_color - x.avg_color) for x in selected_items
+            )
             if color_distance < min_color_distance:
                 # too close to existing selected frame
                 # don't select unless we run out of frames
@@ -953,7 +1022,7 @@ def load_font(args, font_path, font_size, default_font_path):
         try:
             return ImageFont.truetype(font_path, font_size)
         except OSError:
-            error_exit("Cannot load font: {}".format(font_path))
+            error_exit(f"Cannot load font: {font_path}")
 
 
 def compose_contact_sheet(
@@ -1149,15 +1218,15 @@ def cleanup(frames, args):
     """Delete temporary captures
     """
     if args.is_verbose:
-        print("Deleting {} temporary frames...".format(len(frames)))
+        print(f"Deleting {len(frames)} temporary frames...")
     for frame in frames:
         try:
             if args.is_verbose:
-                print("Deleting {} ...".format(frame.filename))
+                print(f"Deleting {frame.filename} ...")
             os.unlink(frame.filename)
         except Exception as e:
             if args.is_verbose:
-                print("[Error] Failed to delete {}".format(frame.filename))
+                print(f"[Error] Failed to delete {frame.filename}")
                 print(e)
 
 
@@ -1200,9 +1269,8 @@ def metadata_position_type(string):
     lowercase_position = string.lower()
     if lowercase_position in valid_metadata_positions:
         return lowercase_position
-    else:
-        error = 'Metadata header position must be one of %s' % (str(valid_metadata_positions, ))
-        raise argparse.ArgumentTypeError(error)
+    error = f'Metadata header position must be one of {valid_metadata_positions}'
+    raise argparse.ArgumentTypeError(error)
 
 
 def hex_color_type(string):
@@ -1214,8 +1282,7 @@ def hex_color_type(string):
         components = tuple(bytearray.fromhex(string))
         if len(components) == 3:
             components += (255,)
-        c = Color(*components)
-        return c
+        return Color(*components)
     except:
         error = "Color must be an hexadecimal number, for example 'AABBCC'"
         raise argparse.ArgumentTypeError(error)
@@ -1245,7 +1312,7 @@ def timestamp_position_type(string):
     try:
         return getattr(TimestampPosition, string)
     except AttributeError:
-        error = "Invalid timestamp position: %s. Valid positions are: %s" % (string, VALID_TIMESTAMP_POSITIONS)
+        error = f"Invalid timestamp position: {string}. Valid positions are: {VALID_TIMESTAMP_POSITIONS}"
         raise argparse.ArgumentTypeError(error)
 
 
@@ -1261,7 +1328,7 @@ def interval_type(string):
     cal = parsedatetime.Calendar()
     interval = cal.parseDT(string, sourceTime=m)[0] - m
     if interval == m:
-        error = "Invalid interval format: {}".format(string)
+        error = f"Invalid interval format: {string}"
         raise argparse.ArgumentTypeError(error)
 
     return interval
@@ -1277,7 +1344,7 @@ def comma_separated_string_type(string):
 
 def error(message):
     """Print an error message."""
-    print("[ERROR] %s" % (message,))
+    print(f"[ERROR] {message}")
 
 
 def error_exit(message):
@@ -1523,11 +1590,13 @@ def main():
         help="Output image format. Can be any format supported by pillow. For example 'png' or 'jpg'.",
         dest="image_format")
     parser.add_argument(
-        "-T", "--timestamp-position",
+        "-T",
+        "--timestamp-position",
         type=timestamp_position_type,
         default=Config.timestamp_position,
-        help="Timestamp position. Must be one of %s." % (VALID_TIMESTAMP_POSITIONS,),
-        dest="timestamp_position")
+        help=f"Timestamp position. Must be one of {VALID_TIMESTAMP_POSITIONS}.",
+        dest="timestamp_position",
+    )
     parser.add_argument(
         "-r", "--recursive",
         action="store_true",
@@ -1655,7 +1724,7 @@ def main():
 
             else:
                 files_to_process = glob(escape(path))
-                if len(files_to_process) == 0:
+                if not files_to_process:
                     files_to_process = [path]
                 for filename in files_to_process:
                     process_file_or_ignore(filename, args)
@@ -1665,35 +1734,37 @@ def process_file(path, args):
     """Generate a video contact sheet for the file at given path
     """
     if args.is_verbose:
-        print("Considering {}...".format(path))
+        print(f"Considering {path}...")
 
     args = deepcopy(args)
 
     if not os.path.exists(path):
         if args.ignore_errors:
-            print("File does not exist, skipping: {}".format(path))
+            print(f"File does not exist, skipping: {path}")
             return
         else:
-            error_message = "File does not exist: {}".format(path)
+            error_message = f"File does not exist: {path}"
             error_exit(error_message)
 
     file_extension = path.lower().split(".")[-1]
     if file_extension in args.exclude_extensions:
-        print("[WARN] Excluded extension {}. Skipping.".format(file_extension))
+        print(f"[WARN] Excluded extension {file_extension}. Skipping.")
         return
 
     output_path = args.output_path
     if not output_path:
-        output_path = path + "." + args.image_format
+        output_path = f"{path}.{args.image_format}"
     elif os.path.isdir(output_path):
-        output_path = os.path.join(output_path, os.path.basename(path) + "." + args.image_format)
+        output_path = os.path.join(
+            output_path, f"{os.path.basename(path)}.{args.image_format}"
+        )
 
-    if args.no_overwrite:
-        if os.path.exists(output_path):
-            print("[INFO] contact-sheet already exists, skipping: {}".format(output_path))
+    if os.path.exists(output_path):
+        if args.no_overwrite:
+            print(f"[INFO] contact-sheet already exists, skipping: {output_path}")
             return
 
-    print("Processing {}...".format(path))
+    print(f"Processing {path}...")
 
     if args.interval is not None and args.manual_timestamps is not None:
         error_exit("Cannot use --interval and --manual at the same time.")
@@ -1721,7 +1792,7 @@ def process_file(path, args):
     )
 
     # metadata margins
-    if not args.metadata_margin == DEFAULT_METADATA_MARGIN:
+    if args.metadata_margin != DEFAULT_METADATA_MARGIN:
         args.metadata_horizontal_margin = args.metadata_margin
         args.metadata_vertical_margin = args.metadata_margin
 
@@ -1800,7 +1871,7 @@ def process_file(path, args):
     thumbnail_output_path = args.thumbnail_output_path
     if thumbnail_output_path is not None:
         os.makedirs(thumbnail_output_path, exist_ok=True)
-        print("Copying thumbnails to {} ...".format(thumbnail_output_path))
+        print(f"Copying thumbnails to {thumbnail_output_path} ...")
         for i, frame in enumerate(sorted(selected_frames, key=lambda x_frame: x_frame.timestamp)):
             print(frame.filename)
             thumbnail_file_extension = frame.filename.lower().split(".")[-1]
@@ -1814,7 +1885,7 @@ def process_file(path, args):
     cleanup(temp_frames, args)
 
     if not is_save_successful:
-        error_exit("Unsupported image format: %s." % (args.image_format,))
+        error_exit(f"Unsupported image format: {args.image_format}.")
 
 
 if __name__ == "__main__":
